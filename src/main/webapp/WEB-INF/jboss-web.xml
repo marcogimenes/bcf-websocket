@@ -1,0 +1,3 @@
+<jboss-web version="7.2">
+    <context-root>batimentos-websocket</context-root>
+</jboss-web>

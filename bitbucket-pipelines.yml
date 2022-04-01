@@ -1,0 +1,34 @@
+image: maven:3.6.0-jdk-8
+
+pipelines:
+  tags:
+    '*':
+      - step:
+          caches:
+            - maven
+          script:
+            - mvn -version
+            - mvn package
+            - mvn war:war
+            - ssh ubuntu@ftp.intmed.com.br sudo mkdir -m 770 -p /home/hapvida/batimentos/wildfly/v$BITBUCKET_TAG
+            - scp /opt/atlassian/pipelines/agent/build/target/batimentos-$BITBUCKET_TAG.war ubuntu@ftp.intmed.com.br:~/
+            - ssh ubuntu@ftp.intmed.com.br sudo mv /home/ubuntu/batimentos-$BITBUCKET_TAG.war /home/hapvida/batimentos/wildfly/v$BITBUCKET_TAG/
+            - ssh ubuntu@ftp.intmed.com.br sudo chown -R hapvida:hapvida /home/hapvida/batimentos/wildfly/v$BITBUCKET_TAG/
+            - ssh ubuntu@ftp.intmed.com.br sudo chmod -R 770 /home/hapvida/batimentos/wildfly/v$BITBUCKET_TAG/
+  branches:
+    master:
+      - step:
+          deployment: production
+          script:
+            - echo $BITBUCKET_TAG
+            - echo $BITBUCKET_BUILD_NUMBER
+    develop:
+      - step:
+          caches:
+            - maven
+          deployment: test
+          script:
+            - mvn package
+            - mvn war:war
+            - ssh ubuntu@18.228.43.112 "sudo rm -rf ~/wildfly/standalone/deployments/*.war*"
+            - scp /opt/atlassian/pipelines/agent/build/target/*.war ubuntu@18.228.43.112:~/wildfly/standalone/deployments/
